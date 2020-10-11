@@ -3,6 +3,10 @@ bokeh==2.2.1
 dill
 flask
 flask-wtf
+flask-sqlalchemy
+flask-login
+wtforms
+werkzeug
 jinja2
 pip
 simplejson
