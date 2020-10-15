@@ -1,5 +1,38 @@
 {% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
 {% block title %} SakeOrb: Sake Recommender {% endblock %}
+
 {% block content %}
-<h1>This is something I really wanna show!!!!</h1>
+
+<div class="container">
+  <div class="row">
+    <div class="col"></div>
+      <div class="col-6 text-center">
+        <h1>Find Your Sake!!</h1>
+        <form method="POST" action="/">
+
+            {{ form.hidden_tag()}}
+            {{ wtf.form_field(form.search) }}
+
+            <button class="btn btn-lg btn-primary btn-block" type="submit">
+              <i class="fa fa-search"></i>
+            </button>
+
+        </form>
+      </div>
+    <div class="col"></div>
+  </div>
+</div>
+
+
+
+<!-- <div class="input-group">
+  <input type="text" class="form-control" placeholder="Search this blog">
+  <div class="input-group-append">
+    <button class="btn btn-secondary" type="button">
+      <i class="fa fa-search"></i>
+    </button>
+  </div>
+</div> -->
 {% endblock %}
