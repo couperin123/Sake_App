@@ -3,21 +3,24 @@ from datetime import timedelta
 from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, ValidationError
+from wtforms import StringField, PasswordField, BooleanField, RadioField, ValidationError
 from wtforms.validators import InputRequired, Email, Length, EqualTo
 # from forms import SearchForm, LoginForm, RegisterForm
-from tables import Results
+# from tables import Results
+from dist import sake_distance
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
 import os
 import psycopg2
 
+import pandas as pd
+
 app = Flask(__name__)
 
 ENV = 'dev'
 
-if ENV=='dev':
+if ENV=='prod':
     app.debug = True
     # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.sqlite3'
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
@@ -51,7 +54,8 @@ class User(UserMixin, db.Model):
         return '<User %r>' % self.username
 
 class Sake(db.Model):
-    __table_name__ = 'sake'
+    __tablename__ = 'sake'
+    # __table_name__ = 'sake'
     index = db.Column(db.Integer, primary_key=True)
     Sake_name = db.Column(db.String)
     Sake_Product_Name = db.Column(db.String)
@@ -70,6 +74,10 @@ def load_user(user_id):
 
 class SearchForm(FlaskForm):
     search = StringField('', [InputRequired()], render_kw={"placeholder": "Sake Name (in Japanese)"})
+
+class SelectSakeForm(FlaskForm):
+    # selectsake = RadioField()
+    selectsake = RadioField(validators=[InputRequired()])
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[InputRequired(), Length(min=4, max=15)])
@@ -96,35 +104,56 @@ class RegisterForm(FlaskForm):
 def index():
     form = SearchForm()
     if request.method == 'POST' and form.validate_on_submit():
-        return search_results(form)  # or what you want
+        results = []
+        search_string = form.data['search']
+        # print('search string:', search_string)
+        if search_string:
+            qry = Sake.query.filter_by(Sake_name=search_string)
+            results = qry.all()
+
+        if not results:
+            flash('No results found!')
+            return redirect('/')
+        else:
+            # return recommend(results)
+            session['search_string'] = search_string
+            return redirect(url_for('search'))
+
     return render_template("index.html", form=form)
+
+
+# Print Search Results
+@app.route('/search', methods=['GET', 'POST'])
+def search():
+    results = Sake.query.filter_by(Sake_name=session.get('search_string', None)).all()
+    form = SelectSakeForm()
+    form.selectsake.choices = [(row.index, row.Sake_Product_Name) for row in results]
+
+    if request.method == 'POST':
+        if not form.validate_on_submit():
+            flash('Select one Sake!')
+            return redirect(url_for('search'))
+        else:
+            # recsakeid is the selected Sake id for distance calculation
+            session['recsakeid'] = request.form['selectsake']
+            # print('sake id for recommend:', request.form['selectsake'])
+            # Here calculate the distances based on recsakeid
+            dists, indices = sake_distance(db, session.get('recsakeid', None))
+            if indices:
+                # print(indices)
+                # print(dists)
+                sake_recommend = [Sake.query.filter(Sake.index==idx).first() for idx in indices]
+                # sake_recommend = Sake.query.filter(Sake.index.in_(indices)).all()
+            return render_template('recommend.html', recommend=zip(dists, sake_recommend))
+
+    return render_template('search.html', form=form, table=zip(form.selectsake, results))
+
 
 # View page
 # @app.route("/view")
 # def view():
 #     return render_template("view.html", values=User.query.all())
 
-# Print Search Results
-@app.route('/results')
-def search_results(search):
-    results = []
-    search_string = search.data['search']
-    print('search string:', search_string)
-    if search.data['search'] == '':
-        qry = Sake.query
-        results = qry.all()
-    else:
-        qry = Sake.query.filter_by(Sake_name=search_string)
-        results = qry.all()
-
-    if not results:
-        flash('No results found!')
-        return redirect('/')
-    else:
-        # display results
-        table = Results(results)
-        table.border = True
-        return render_template('results.html', table=table)
 
 # Test Login page
 @app.route('/login', methods=['GET', 'POST'])
