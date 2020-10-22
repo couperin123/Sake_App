@@ -51,7 +51,9 @@ class Sake(db.Model):
     __tablename__ = 'sake'
     index = db.Column(db.Integer, primary_key=True)
     Sake_name = db.Column(db.String)
+    Sake_name_R = db.Column(db.String)
     Sake_Product_Name = db.Column(db.String)
+    Sake_Product_Name_R = db.Column(db.String)
     Type = db.Column(db.String)
     SMV = db.Column(db.Numeric(precision=8, scale=2))
     Acidity = db.Column(db.Numeric(precision=8, scale=2))
@@ -67,7 +69,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 class SearchForm(FlaskForm):
-    search = StringField('', [InputRequired()], render_kw={"placeholder": "Sake Name (in Japanese)"})
+    search = StringField('', [InputRequired()], render_kw={"placeholder": "Sake Name ('Dassai' or '獺祭')"})
 
 class SelectSakeForm(FlaskForm):
     selectsake = RadioField(validators=[InputRequired()])
@@ -92,6 +94,15 @@ class RegisterForm(FlaskForm):
         if User.query.filter_by(username=field.data).first():
             raise ValidationError('Username already in use.')
 
+# Define if input is english
+def isEnglish(s):
+    try:
+        s.encode(encoding='utf-8').decode('ascii')
+    except UnicodeDecodeError:
+        return False
+    else:
+        return True
+
 # Home Page
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -100,7 +111,10 @@ def index():
         results = []
         search_string = form.data['search']
         if search_string:
-            qry = Sake.query.filter_by(Sake_name=search_string)
+            if isEnglish(search_string):
+                qry = Sake.query.filter(Sake.Sake_name_R.ilike(search_string.lower()))
+            else:
+                qry = Sake.query.filter_by(Sake_name=search_string)
             results = qry.all()
 
         if not results:
@@ -113,10 +127,18 @@ def index():
     return render_template("index.html", form=form)
 
 
+
 # Print Search Results
 @app.route('/search', methods=['GET', 'POST'])
 def search():
-    results = Sake.query.filter_by(Sake_name=session.get('search_string', None)).all()
+    search_string = session.get('search_string', None)
+    # print(search_string)
+    if isEnglish(search_string): # if english search String
+        # print('English!')
+        results = Sake.query.filter(Sake.Sake_name_R.ilike(search_string.lower()))
+    else:
+        # print('Japanese!')
+        results = Sake.query.filter(Sake.Sake_name==search_string).all()
     form = SelectSakeForm()
     form.selectsake.choices = [(row.index, row.Sake_Product_Name) for row in results]
 

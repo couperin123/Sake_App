@@ -12,6 +12,8 @@
         <tr>
           <th scope="col"></th>
           <th scope="col">Sake Name</th>
+          <th scope="col">Sake Name (Romaji)</th>
+          <!-- <th scope="col">Meigara Name (Romaji)</th> -->
           <th scope="col">Type</th>
           <th scope="col">SMV</th>
           <th scope="col">Acidity</th>
@@ -25,7 +27,9 @@
         {% for radio, data in table %}
           <tr>
             <td>{{ radio }}</td>
-            <td>{{ radio.label }}</td>
+            <td>{{ data.Sake_Product_Name }}</td>
+            <td>{{ data.Sake_Product_Name_R }}</td>
+            <!-- <td>{{ data.Sake_name_R }}</td> -->
             <td>{{ data.Type }}</td>
             <td>{{ data.SMV }}</td>
             <td>{{ data.Acidity }}</td>
