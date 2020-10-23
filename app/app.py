@@ -55,6 +55,8 @@ class Sake(db.Model):
     Sake_Product_Name = db.Column(db.String)
     Sake_Product_Name_R = db.Column(db.String)
     Type = db.Column(db.String)
+    Type_cat_jp = db.Column(db.String)
+    Type_cat_R = db.Column(db.String)
     SMV = db.Column(db.Numeric(precision=8, scale=2))
     Acidity = db.Column(db.Numeric(precision=8, scale=2))
     Amakara = db.Column(db.Numeric(precision=8, scale=3))
@@ -149,7 +151,7 @@ def search():
         else:
             # recsakeid is the selected Sake id for distance calculation
             session['recsakeid'] = request.form['selectsake']
-            # print('sake id for recommend:', request.form['selectsake'])
+            print('sake id for recommend:', request.form['selectsake'])
             # Here calculate the distances based on recsakeid
             dists, indices = sake_distance(db, session.get('recsakeid', None))
             if indices:
@@ -206,6 +208,12 @@ def register():
 @login_required
 def account():
     return render_template('account.html', name=current_user.username)
+
+# Contact Page
+@app.route('/contact')
+def contact():
+    return render_template('contact.html')
+
 
 # User logout
 @app.route('/logout')
