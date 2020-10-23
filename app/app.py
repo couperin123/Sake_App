@@ -64,6 +64,7 @@ class Sake(db.Model):
     ABV = db.Column(db.Numeric(precision=8, scale=2))
     Taste_like = db.Column(db.Integer)
     Taste_dislike = db.Column(db.Integer)
+    Varietal = db.Column(db.String)
 
 
 @login_manager.user_loader

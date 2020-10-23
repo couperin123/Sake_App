@@ -1,20 +1,51 @@
 import pandas as pd
 import numpy as np
 import sklearn
+
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import MaxAbsScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer
 from sklearn.neighbors import NearestNeighbors
 
 def sake_distance(db, sakeid):
-    # print(query)
+    # print("selected sake id:", sakeid)
     df = pd.read_sql('sake', con=db.engine, index_col='index')
-    # Use Amakara, Notan for the distance calculation
-    nn_col = ['Amakara', 'Notan']
-    features = df[nn_col].to_numpy()
-    sakedfrow = df.index.get_loc(int(sakeid))
-    # print(df.iloc[sakedfrow,:])
-    nn = NearestNeighbors(n_neighbors=10, algorithm= 'brute', metric= 'cosine').fit(features)
-    # print(df.head())
-    dists, indices = nn.kneighbors([features[sakedfrow]])
-    print(df.iloc[indices[0], 0:8])
+    # None -> np.nan, important for categorical imputation, scikit-learn won't take None as missing values
+    df = df.fillna(value=np.nan)
+    # Fix the missing Polish_Ratio by using the most frequent values in each Sake category
+    sake_PR_mode_bytype = df.loc[df['Polish_Ratio'].notnull(),['Polish_Ratio','Type_cat']]\
+                            .groupby(['Type_cat']).agg(lambda x: x.value_counts().index[0]).values
+    # impute the missing values to polish ratio
+    for i, pr in enumerate(sake_PR_mode_bytype, 1):
+        df.loc[(df['Polish_Ratio'].isnull()) & (df['Type_cat']==i), 'Polish_Ratio'] = \
+        [pr] * len(df.loc[(df['Polish_Ratio'].isnull()) & (df['Type_cat']==i), 'Polish_Ratio'])
+
+    # Pipeline Setup
+    numeric_features = ['SMV', 'Acidity', 'ABV', 'Polish_Ratio']
+    numeric_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(missing_values=np.nan, strategy='median'))])
+
+    categorical_features = ['Type_cat', 'Varietal']
+    categorical_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(missing_values=np.nan, strategy='constant', fill_value='missing')),
+        ('onehot', OneHotEncoder(handle_unknown='ignore'))])
+
+    features = ColumnTransformer(
+        transformers=[
+            ('num', numeric_transformer, numeric_features),
+            ('cat', categorical_transformer, categorical_features)])
+    est = Pipeline([
+        ('features', features),
+        ('scaling', MaxAbsScaler()),
+        ('estimator', NearestNeighbors(n_neighbors=10, algorithm= 'brute', metric= 'cosine'))
+    ])
+
+    est.fit(df)
+
+    sake_transformscaled = est['scaling'].transform(features.transform(df[df.index==int(sakeid)]))
+    # print(sake_transformscaled)
+    dists, indices = est['estimator'].kneighbors(sake_transformscaled)
     # print(df.loc[int(sakeid),:])
     # print(type(sakeid))
     # print("distance:", dists)
