@@ -3,8 +3,13 @@
 
 {% block title %} SakeOrb: Sake Recommender {% endblock %}
 
-{% block content %}
+{% block styles %}
+{{super()}}
+<link rel="stylesheet" href="static/css/style.css')">
+{% endblock %}
 
+{% block content %}
+<header class="intro-header">
 <div class="container text-center">
   <!-- <div class="row"> -->
     <!-- <div class="col"></div> -->
@@ -12,6 +17,11 @@
         <p>
           <h3>Your Sake Journey Starts Here</h3>
         </p>
+
+        <!-- <p>
+          <img src="{{url_for('static', filename='img/Sake_pixabay_1280_668.jpg')}}" align="middle" alt="Sake" class="responsive"/>
+        </p> -->
+
         <form method="POST" action="/">
 
             {{ form.hidden_tag()}}
@@ -26,6 +36,7 @@
     <!-- <div class="col"></div> -->
   <!-- </div> -->
 </div>
+</header>
 
 <div class="container">
   <div class="row">

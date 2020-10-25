@@ -162,10 +162,29 @@ def search():
     return render_template('search.html', form=form, table=zip(form.selectsake, results))
 
 # Print popular items
-@app.route('/hot', methods=['GET'])
+@app.route('/hot', methods=['GET', 'POST'])
 def hot():
     hotitems = Sake.query.filter(Sake.Taste_like + Sake.Taste_dislike > 800).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).all()
-    return render_template('hot.html', hotitems=hotitems)
+    # print(hotitems)
+    form = SelectSakeForm()
+    form.selectsake.choices = [(row.index, row.Sake_Product_Name) for row in hotitems]
+    # print(form.selectsake)
+
+    if request.method == 'POST':
+        if not form.validate_on_submit():
+            flash('Select one Sake!')
+            return redirect(url_for('hot'))
+        else:
+            # recsakeid is the selected Sake id for distance calculation
+            session['recsakeid'] = request.form['selectsake']
+            print('sake id for recommend:', request.form['selectsake'])
+            # Here calculate the distances based on recsakeid
+            dists, indices = sake_distance(db, session.get('recsakeid', None))
+            if indices:
+                sake_recommend = [Sake.query.filter(Sake.index==idx).first() for idx in indices]
+            return render_template('recommend.html', recommend=zip(dists, sake_recommend))
+
+    return render_template('hot.html', form=form, table=zip(form.selectsake, hotitems))
 
 # Login page
 @app.route('/login', methods=['GET', 'POST'])
