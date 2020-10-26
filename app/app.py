@@ -164,8 +164,13 @@ def search():
 # Print popular items
 @app.route('/hot', methods=['GET', 'POST'])
 def hot():
-    hotitems = Sake.query.filter(Sake.Taste_like + Sake.Taste_dislike > 800).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).all()
-    # print(hotitems)
+    clean_dry = Sake.query.filter(Sake.Amakara < 0, Sake.Notan < 0).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).distinct(Sake.Taste_like + Sake.Taste_dislike).limit(3).all()
+    clean_sweet = Sake.query.filter(Sake.Amakara > 0, Sake.Notan < 0).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).distinct(Sake.Taste_like + Sake.Taste_dislike).limit(3).all()
+    rich_dry = Sake.query.filter(Sake.Amakara < 0, Sake.Notan > 0).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).distinct(Sake.Taste_like + Sake.Taste_dislike).limit(3).all()
+    rich_sweet = Sake.query.filter(Sake.Amakara > 0, Sake.Notan > 0).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).distinct(Sake.Taste_like + Sake.Taste_dislike).limit(3).all()
+    hotitems = clean_dry + clean_sweet + rich_dry + rich_sweet
+    # hotitems = Sake.query.filter(Sake.Taste_like + Sake.Taste_dislike > 800).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).all()
+    print(hotitems)
     form = SelectSakeForm()
     form.selectsake.choices = [(row.index, row.Sake_Product_Name) for row in hotitems]
     # print(form.selectsake)
@@ -228,6 +233,11 @@ def register():
 @login_required
 def account():
     return render_template('account.html', name=current_user.username)
+
+# About Page
+@app.route('/about')
+def about():
+    return render_template('about.html')
 
 # Contact Page
 @app.route('/contact')

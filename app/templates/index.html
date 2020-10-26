@@ -9,17 +9,22 @@
   <p>
     <h3>Your Sake Journey Starts Here</h3>
   </p>
-  <img src="static/img/Sake_pixabay_1920_1003.jpg" alt="Responsive image" class="img-fluid">
-    <form method="POST" action="/">
 
-        {{ form.hidden_tag()}}
-        {{ wtf.form_field(form.search) }}
+  <figure class="figure">
+    <img src="static/img/Sake_pixabay_1920_1003.jpg" alt="Responsive image" class="img-fluid">
+    <!-- <figcaption class="figure-caption text-right">Photo by Duke Ng on pixabay</figcaption> -->
+  </figure>
 
-        <button class="btn btn-lg btn-primary btn-block" type="submit">
-          <i class="fa fa-search"></i>
-        </button>
+  <form method="POST" action="/">
 
-    </form>
+      {{ form.hidden_tag()}}
+      {{ wtf.form_field(form.search) }}
+
+      <button class="btn btn-lg btn-primary btn-block" type="submit">
+        <i class="fa fa-search"></i>
+      </button>
+
+  </form>
 </div>
 
 
@@ -32,4 +37,5 @@
     </div>
   </div>
 </div>
+
 {% endblock %}
