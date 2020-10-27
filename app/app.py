@@ -163,15 +163,40 @@ def search():
     return render_template('search.html', form=form, table=zip(form.selectsake, results))
 
 # Print popular items
-@app.route('/hot', methods=['GET', 'POST'])
-def hot():
-    clean_dry = Sake.query.filter(Sake.Amakara < 0, Sake.Notan < 0).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).distinct(Sake.Taste_like + Sake.Taste_dislike).limit(3).all()
-    clean_sweet = Sake.query.filter(Sake.Amakara > 0, Sake.Notan < 0).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).distinct(Sake.Taste_like + Sake.Taste_dislike).limit(3).all()
-    rich_dry = Sake.query.filter(Sake.Amakara < 0, Sake.Notan > 0).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).distinct(Sake.Taste_like + Sake.Taste_dislike).limit(3).all()
-    rich_sweet = Sake.query.filter(Sake.Amakara > 0, Sake.Notan > 0).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).distinct(Sake.Taste_like + Sake.Taste_dislike).limit(3).all()
-    hotitems = clean_dry + clean_sweet + rich_dry + rich_sweet
-    # hotitems = Sake.query.filter(Sake.Taste_like + Sake.Taste_dislike > 800).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).all()
-    print(hotitems)
+# @app.route('/hot', methods=['GET', 'POST'])
+# def hot():
+#     clean_dry = Sake.query.filter(Sake.Amakara < 0, Sake.Notan < 0).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).distinct(Sake.Taste_like + Sake.Taste_dislike).limit(3).all()
+#     clean_sweet = Sake.query.filter(Sake.Amakara > 0, Sake.Notan < 0).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).distinct(Sake.Taste_like + Sake.Taste_dislike).limit(3).all()
+#     rich_dry = Sake.query.filter(Sake.Amakara < 0, Sake.Notan > 0).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).distinct(Sake.Taste_like + Sake.Taste_dislike).limit(3).all()
+#     rich_sweet = Sake.query.filter(Sake.Amakara > 0, Sake.Notan > 0).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).distinct(Sake.Taste_like + Sake.Taste_dislike).limit(3).all()
+#     hotitems = clean_dry + clean_sweet + rich_dry + rich_sweet
+#     # hotitems = Sake.query.filter(Sake.Taste_like + Sake.Taste_dislike > 800).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).all()
+#     # print(hotitems)
+#     form = SelectSakeForm()
+#     form.selectsake.choices = [(row.index, row.Sake_Product_Name) for row in hotitems]
+#     # print(form.selectsake)
+# 
+#     if request.method == 'POST':
+#         if not form.validate_on_submit():
+#             flash('Select one Sake!')
+#             return redirect(url_for('hot'))
+#         else:
+#             # recsakeid is the selected Sake id for distance calculation
+#             session['recsakeid'] = request.form['selectsake']
+#             print('sake id for recommend:', request.form['selectsake'])
+#             # Here calculate the distances based on recsakeid
+#             dists, indices = sake_distance(db, session.get('recsakeid', None))
+#             if indices:
+#                 sake_recommend = [Sake.query.filter(Sake.index==idx).first() for idx in indices]
+#             return render_template('recommend.html', recommend=zip(dists, sake_recommend))
+#
+#     return render_template('hot.html', form=form, table=zip(form.selectsake, hotitems))
+
+# Print popular dry, clean Sake
+@app.route('/dry-clean', methods=['GET', 'POST'])
+def dryclean():
+    hotitems = Sake.query.filter(Sake.Amakara < 0, Sake.Notan < 0).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).distinct(Sake.Taste_like + Sake.Taste_dislike).limit(10).all()
+
     form = SelectSakeForm()
     form.selectsake.choices = [(row.index, row.Sake_Product_Name) for row in hotitems]
     # print(form.selectsake)
@@ -179,18 +204,93 @@ def hot():
     if request.method == 'POST':
         if not form.validate_on_submit():
             flash('Select one Sake!')
-            return redirect(url_for('hot'))
+            return redirect(url_for('dryclean'))
         else:
             # recsakeid is the selected Sake id for distance calculation
             session['recsakeid'] = request.form['selectsake']
-            print('sake id for recommend:', request.form['selectsake'])
+            # print('sake id for recommend:', request.form['selectsake'])
             # Here calculate the distances based on recsakeid
             dists, indices = sake_distance(db, session.get('recsakeid', None))
             if indices:
                 sake_recommend = [Sake.query.filter(Sake.index==idx).first() for idx in indices]
             return render_template('recommend.html', recommend=zip(dists, sake_recommend))
 
-    return render_template('hot.html', form=form, table=zip(form.selectsake, hotitems))
+    return render_template('dry-clean.html', form=form, table=zip(form.selectsake, hotitems))
+
+# Print popular sweet, clean Sake
+@app.route('/sweet-clean', methods=['GET', 'POST'])
+def sweetclean():
+    hotitems = Sake.query.filter(Sake.Amakara > 0, Sake.Notan < 0).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).distinct(Sake.Taste_like + Sake.Taste_dislike).limit(10).all()
+
+    form = SelectSakeForm()
+    form.selectsake.choices = [(row.index, row.Sake_Product_Name) for row in hotitems]
+    # print(form.selectsake)
+
+    if request.method == 'POST':
+        if not form.validate_on_submit():
+            flash('Select one Sake!')
+            return redirect(url_for('sweetclean'))
+        else:
+            # recsakeid is the selected Sake id for distance calculation
+            session['recsakeid'] = request.form['selectsake']
+            # print('sake id for recommend:', request.form['selectsake'])
+            # Here calculate the distances based on recsakeid
+            dists, indices = sake_distance(db, session.get('recsakeid', None))
+            if indices:
+                sake_recommend = [Sake.query.filter(Sake.index==idx).first() for idx in indices]
+            return render_template('recommend.html', recommend=zip(dists, sake_recommend))
+
+    return render_template('sweet-clean.html', form=form, table=zip(form.selectsake, hotitems))
+
+# Print popular dry, rich Sake
+@app.route('/dry-rich', methods=['GET', 'POST'])
+def dryrich():
+    hotitems = Sake.query.filter(Sake.Amakara < 0, Sake.Notan > 0).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).distinct(Sake.Taste_like + Sake.Taste_dislike).limit(10).all()
+
+    form = SelectSakeForm()
+    form.selectsake.choices = [(row.index, row.Sake_Product_Name) for row in hotitems]
+    # print(form.selectsake)
+
+    if request.method == 'POST':
+        if not form.validate_on_submit():
+            flash('Select one Sake!')
+            return redirect(url_for('dryrich'))
+        else:
+            # recsakeid is the selected Sake id for distance calculation
+            session['recsakeid'] = request.form['selectsake']
+            # print('sake id for recommend:', request.form['selectsake'])
+            # Here calculate the distances based on recsakeid
+            dists, indices = sake_distance(db, session.get('recsakeid', None))
+            if indices:
+                sake_recommend = [Sake.query.filter(Sake.index==idx).first() for idx in indices]
+            return render_template('recommend.html', recommend=zip(dists, sake_recommend))
+
+    return render_template('dry-rich.html', form=form, table=zip(form.selectsake, hotitems))
+
+# Print popular dry, rich Sake
+@app.route('/sweet-rich', methods=['GET', 'POST'])
+def sweetrich():
+    hotitems = Sake.query.filter(Sake.Amakara > 0, Sake.Notan > 0).order_by((Sake.Taste_like + Sake.Taste_dislike).desc()).distinct(Sake.Taste_like + Sake.Taste_dislike).limit(10).all()
+
+    form = SelectSakeForm()
+    form.selectsake.choices = [(row.index, row.Sake_Product_Name) for row in hotitems]
+    # print(form.selectsake)
+
+    if request.method == 'POST':
+        if not form.validate_on_submit():
+            flash('Select one Sake!')
+            return redirect(url_for('sweetrich'))
+        else:
+            # recsakeid is the selected Sake id for distance calculation
+            session['recsakeid'] = request.form['selectsake']
+            # print('sake id for recommend:', request.form['selectsake'])
+            # Here calculate the distances based on recsakeid
+            dists, indices = sake_distance(db, session.get('recsakeid', None))
+            if indices:
+                sake_recommend = [Sake.query.filter(Sake.index==idx).first() for idx in indices]
+            return render_template('recommend.html', recommend=zip(dists, sake_recommend))
+
+    return render_template('sweet-rich.html', form=form, table=zip(form.selectsake, hotitems))
 
 # Login page
 @app.route('/login', methods=['GET', 'POST'])

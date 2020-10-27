@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %} SakeOrb: Dry & Clean Sake {% endblock %}
+
+{% block content %}
+<form action="sweet-clean" method="POST">
+  <div class="table-responsive">
+    <table class="table">
+      <thead class="thead-light">
+        <tr>
+          <th scope="col"></th>
+          <th scope="col">Sake Name</th>
+          <!-- <th scope="col">Sake Name (Romaji)</th> -->
+          <th scope="col">Number of Reviews</th>
+          <th scope="col">Like Percentage</th>
+          <th scope="col">Type</th>
+          <th scope="col">SMV</th>
+          <th scope="col">Acidity</th>
+          <th scope="col">Amakara</th>
+          <th scope="col">Notan</th>
+          <th scope="col">ABV</th>
+          <th scope="col">Polish Ratio</th>
+          <th scope="col">Rice Varietal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{form.hidden_tag()}}
+        {% for radio, data in table %}
+            <tr>
+              <td>{{ radio }}</td>
+              <td>{{ data.Sake_Product_Name + ' (' + data.Sake_Product_Name_R + ')' }}</td>
+              <!-- <td>{{ data.Sake_Product_Name_R }}</td> -->
+              <td>{{ data.Taste_like + data.Taste_dislike }}</td>
+              <td>{{ "%4.2f"|format(100*(data.Taste_like/(data.Taste_like + data.Taste_dislike))) }}</td>
+              <td>{{ data.Type_cat_jp + ' (' + data.Type_cat_R + ')' }}</td>
+              <td>{{ data.SMV }}</td>
+              <td>{{ data.Acidity }}</td>
+              <td>{{ data.Amakara }}</td>
+              <td>{{ data.Notan }}</td>
+              <td>{{ data.ABV }}</td>
+              <td>{{ data.Polish_Ratio }}</td>
+              <td>{{ data.Varietal }}</td>
+            </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <button class="btn btn-lg btn-primary btn-block" type="submit">
+      <i class="fa fa-search"></i>
+    </button>
+  </div>
+</form>
+
+{% endblock %}
