@@ -7,9 +7,11 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import MaxAbsScaler, OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.neighbors import NearestNeighbors
+from sklearn.decomposition import TruncatedSVD
 
 def sake_distance(db, sakeid):
-    # print("selected sake id:", sakeid)
+    n_res = 10
+    # print("selected sake id:", sakeid, "number of results:", n_res)
     df = pd.read_sql('sake', con=db.engine, index_col='index')
     # None -> np.nan, important for categorical imputation, scikit-learn won't take None as missing values
     df = df.fillna(value=np.nan)
@@ -22,6 +24,7 @@ def sake_distance(db, sakeid):
         [pr] * len(df.loc[(df['Polish_Ratio'].isnull()) & (df['Type_cat']==i), 'Polish_Ratio'])
 
     # Pipeline Setup
+    # numeric_features = ['SMV', 'Acidity']
     numeric_features = ['SMV', 'Acidity', 'ABV', 'Polish_Ratio']
     numeric_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(missing_values=np.nan, strategy='median'))])
@@ -29,7 +32,8 @@ def sake_distance(db, sakeid):
     categorical_features = ['Type_cat', 'Varietal']
     categorical_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(missing_values=np.nan, strategy='constant', fill_value='missing')),
-        ('onehot', OneHotEncoder(handle_unknown='ignore'))])
+        ('onehot', OneHotEncoder(handle_unknown='ignore')),
+        ('svd', TruncatedSVD(n_components=100))])
 
     features = ColumnTransformer(
         transformers=[
@@ -38,7 +42,7 @@ def sake_distance(db, sakeid):
     est = Pipeline([
         ('features', features),
         ('scaling', MaxAbsScaler()),
-        ('estimator', NearestNeighbors(n_neighbors=10, algorithm= 'brute', metric= 'cosine'))
+        ('estimator', NearestNeighbors(n_neighbors=(n_res+1), algorithm= 'brute', metric= 'cosine'))
     ])
 
     est.fit(df)
@@ -48,6 +52,14 @@ def sake_distance(db, sakeid):
     dists, indices = est['estimator'].kneighbors(sake_transformscaled)
     # print(df.loc[int(sakeid),:])
     # print(type(sakeid))
-    # print("distance:", dists)
-    # print("indices:", indices)
-    return dists[0].tolist(), df.index[indices[0]].tolist();
+    # print("distance:", dists[0])
+    # print("indices:", df.index[indices[0]])
+    idx = np.where(df.index[indices[0]] == int(sakeid))
+    # print('sakeid locates at index:', idx[0])
+
+    # add the sakeid item as the first item of the return list
+    if idx: # if sakeid is in the recommendation list
+        return [0] + np.delete(dists[0], idx[0]).tolist()[:n_res], \
+        [int(sakeid)] + np.delete(df.index[indices[0]], idx[0]).tolist()[:n_res]
+
+    return [0] + dists[0].tolist()[:n_res], [int(sakeid)] + df.index[indices[0]].tolist()[:n_res];

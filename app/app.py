@@ -62,6 +62,7 @@ class Sake(db.Model):
     Amakara = db.Column(db.Numeric(precision=8, scale=3))
     Notan = db.Column(db.Numeric(precision=8, scale=3))
     ABV = db.Column(db.Numeric(precision=8, scale=2))
+    Polish_Ratio = db.Column(db.Numeric(precision=8, scale=2))
     Taste_like = db.Column(db.Integer)
     Taste_dislike = db.Column(db.Integer)
     Varietal = db.Column(db.String)
