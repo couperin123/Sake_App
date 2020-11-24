@@ -11,6 +11,7 @@ from sklearn.decomposition import TruncatedSVD
 
 def sake_distance(db, sakeid):
     n_res = 10
+    svd_on = False
     # print("selected sake id:", sakeid, "number of results:", n_res)
     df = pd.read_sql('sake', con=db.engine, index_col='index')
     # None -> np.nan, important for categorical imputation, scikit-learn won't take None as missing values
@@ -26,14 +27,20 @@ def sake_distance(db, sakeid):
     # Pipeline Setup
     # numeric_features = ['SMV', 'Acidity']
     numeric_features = ['SMV', 'Acidity', 'ABV', 'Polish_Ratio']
+    # numeric_features = ['Amakara', 'Notan', 'ABV', 'Polish_Ratio']
     numeric_transformer = Pipeline(steps=[
         ('imputer', SimpleImputer(missing_values=np.nan, strategy='median'))])
 
     categorical_features = ['Type_cat', 'Varietal']
-    categorical_transformer = Pipeline(steps=[
-        ('imputer', SimpleImputer(missing_values=np.nan, strategy='constant', fill_value='missing')),
-        ('onehot', OneHotEncoder(handle_unknown='ignore')),
-        ('svd', TruncatedSVD(n_components=100))])
+    if svd_on:
+        categorical_transformer = Pipeline(steps=[
+            ('imputer', SimpleImputer(missing_values=np.nan, strategy='constant', fill_value='missing')),
+            ('onehot', OneHotEncoder(handle_unknown='ignore')),
+            ('svd', TruncatedSVD(n_components=100))])
+    else:
+        categorical_transformer = Pipeline(steps=[
+            ('imputer', SimpleImputer(missing_values=np.nan, strategy='constant', fill_value='missing')),
+            ('onehot', OneHotEncoder(handle_unknown='ignore'))])
 
     features = ColumnTransformer(
         transformers=[
@@ -42,10 +49,12 @@ def sake_distance(db, sakeid):
     est = Pipeline([
         ('features', features),
         ('scaling', MaxAbsScaler()),
-        ('estimator', NearestNeighbors(n_neighbors=(n_res+1), algorithm= 'brute', metric= 'cosine'))
+        ('estimator', NearestNeighbors(n_neighbors=(n_res+1), algorithm= 'brute', metric= 'euclidean'))
+        # ('estimator', NearestNeighbors(n_neighbors=(n_res+1), algorithm= 'brute', metric= 'cosine'))
     ])
 
     est.fit(df)
+    # print(est)
 
     sake_transformscaled = est['scaling'].transform(features.transform(df[df.index==int(sakeid)]))
     # print(sake_transformscaled)
